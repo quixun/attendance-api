@@ -1,0 +1,5 @@
+python-dotenv
+cloudinary
+numpy
+pillow
+opencv-python
