@@ -9,11 +9,13 @@ import npwriter
 import numpy as np
 from configs.database import db_dependency
 from decorators.tag_router import tag_router
+from dto.index import RegisterStudentDto
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from models.schema import StudentSchema
 from pydantic import BaseModel
 from services.model import model, train_model
+from services.users import save_user
 
 router = APIRouter()
 class ImageUploadRequest(BaseModel):
@@ -25,7 +27,8 @@ class ImagePredictRequest(BaseModel):
 @tag_router("collection-data")
 def setup_router(router):
     @router.post("/upload/")
-    async def upload_image_on_cloud(request: ImageUploadRequest):
+    async def upload_image_on_cloud(request: RegisterStudentDto, db: db_dependency):
+        folder_name = f'{request.student_id}_{request.name}'
         f_list = []
         for data_image in request.photos:
             image_bytes = base64.b64decode(data_image)
@@ -36,12 +39,12 @@ def setup_router(router):
             face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
             faces = face_cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=5)
             faces = sorted(faces, key=lambda x: x[2]*x[3], reverse=True)
-            if len(faces) == 0:
-                print("No faces detected")
-        
+            if (len(faces) <= 0):
+                return JSONResponse(content={"success": False, "message": "No faces detected!!!"}, status_code=400)
+            
             (x, y, w, h) = faces[0]
             
-            folder_path = os.path.join("data", request.folder_name)
+            folder_path = os.path.join("data", folder_name)
             
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
@@ -53,13 +56,16 @@ def setup_router(router):
             f_list.append(face_resized.reshape(-1))
 
             random_id = uuid.uuid4()
-            filename = os.path.join(folder_path, f"{request.folder_name}_{random_id}.jpg")
+            filename = os.path.join(folder_path, f"{folder_name}_{random_id}.jpg")
             with open(filename, "wb") as file:
                 file.write(img_base64)
                 
-        npwriter.write(request.folder_name, np.array(f_list))
+        npwriter.write(folder_name, np.array(f_list))
+        student = StudentSchema(student_id=request.student_id, name=request.name, email=request.email)
         
-        return JSONResponse(content={"success": True, "message": "Image processed successfully", "folder": request.folder_name}, status_code=200)
+        await save_user(student, db)
+        
+        return JSONResponse(content={"success": True, "message": "Registered successfully!!"}, status_code=200)
     
     @router.post("/attendance")
     async def attendance(request: ImagePredictRequest):
@@ -90,12 +96,16 @@ def setup_router(router):
     
     @router.post("/test-db", response_model=StudentSchema)
     async def test(student: StudentSchema, db: db_dependency):
-        db_student = _models.Student(id=student.id, email=student.email, name=student.name)
-        db.add(db_student)
-        db.commit()
-        db.refresh(db_student)
-        print(db_student)
+        await save_user(student, db)
+        # db_student = _models.Student(student_id=student.student_id, email=student.email, name=student.name)
+        # db.add(db_student)
+        # db.commit()
+        # db.refresh(db_student)
+        # print(db_student)
         return JSONResponse(content={"success": True, "message": "Save into database successfully!!!"}, status_code=200)
+    
+    
     return router
 
 router = setup_router(router)
+
