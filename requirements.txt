@@ -3,3 +3,8 @@ cloudinary
 numpy
 pillow
 opencv-python
+sqlalchemy
+fastapi
+psycopg2
+alembic
+fastapi-sqlalchemy
