@@ -9,13 +9,17 @@ import npwriter
 import numpy as np
 from configs.database import db_dependency
 from decorators.tag_router import tag_router
-from dto.index import RegisterStudentDto
-from fastapi import APIRouter
+from dto.index import LoginDto, MarkAttendanceDto, RegisterStudentDto
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from models.schema import StudentSchema
+from models.schema import StudentSchema, SubjectSchema
 from pydantic import BaseModel
-from services.model import model, train_model
-from services.users import save_user
+from services.attendance import get_attended_students_by_subject_id
+from services.attendance import mark_attendance as mark_attendance_service
+from services.model import predict, train_model
+from services.subject import (get_subject_by_id, get_subjects_service,
+                              save_subject)
+from services.users import get_students_service, login_service, save_user
 
 router = APIRouter()
 class ImageUploadRequest(BaseModel):
@@ -26,8 +30,8 @@ class ImagePredictRequest(BaseModel):
 
 @tag_router("collection-data")
 def setup_router(router):
-    @router.post("/upload/")
-    async def upload_image_on_cloud(request: RegisterStudentDto, db: db_dependency):
+    @router.post("/register/")
+    async def register(request: RegisterStudentDto, db: db_dependency):
         folder_name = f'{request.student_id}_{request.name}'
         f_list = []
         for data_image in request.photos:
@@ -40,7 +44,8 @@ def setup_router(router):
             faces = face_cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=5)
             faces = sorted(faces, key=lambda x: x[2]*x[3], reverse=True)
             if (len(faces) <= 0):
-                return JSONResponse(content={"success": False, "message": "No faces detected!!!"}, status_code=400)
+                print("No faces detected!!!")
+                raise HTTPException(status_code=400, detail="No faces detected")
             
             (x, y, w, h) = faces[0]
             
@@ -70,42 +75,48 @@ def setup_router(router):
     @router.post("/attendance")
     async def attendance(request: ImagePredictRequest):
         train_model()
-
-        image_bytes = base64.b64decode(request.photo)
-        X_test = []
-        img_np = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(img_np, cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        faces = face_cascade.detectMultiScale(img, scaleFactor=1.5, minNeighbors=5)
-        for face in faces: 
-            x, y, w, h = face 
-            im_face = img[y:y + h, x:x + w] 
-            im_face = cv2.resize(im_face, (100, 100)) 
-            X_test.append(im_face.reshape(-1)) 
-
-        if len(faces)>0: 
-            response = model.predict(np.array(X_test)) 
-        else:
+        result = predict(request.photo)
+        if result == False:
             return JSONResponse(content={"success": False, "message": "No faces detected"}, status_code=400)
         
-
-        response = model.predict(np.array(X_test))
-
-        return JSONResponse(content={"success": True, "message": "Predict successfully!!!", "name": response[0]}, status_code=200)
+        print(result)
+                        
+        return JSONResponse(content={"success": True, "message": "Predict successfully!!!", "name": result}, status_code=200)
     
-    @router.post("/test-db", response_model=StudentSchema)
-    async def test(student: StudentSchema, db: db_dependency):
-        await save_user(student, db)
-        # db_student = _models.Student(student_id=student.student_id, email=student.email, name=student.name)
-        # db.add(db_student)
-        # db.commit()
-        # db.refresh(db_student)
-        # print(db_student)
-        return JSONResponse(content={"success": True, "message": "Save into database successfully!!!"}, status_code=200)
+    @router.post("/add-subject")
+    async def add_subject(subject: SubjectSchema, db: db_dependency):
+        await save_subject(subject, db)
+        return JSONResponse(content={"success": True, "message": "Save subject into database successfully!!!"}, status_code=200)
     
+    @router.get("/get-subjects")
+    async def get_subjects(db: db_dependency):
+        subjects = await get_subjects_service(db)
+        return JSONResponse(content={"success": True, "message": "Save subject into database successfully!!!", "subjects": subjects}, status_code=200)
+    
+    @router.post("/mark-attendance")
+    async def mark_attendace(mark_attendance: MarkAttendanceDto, db: db_dependency):
+        await mark_attendance_service(mark_attendance, db)
+        
+        return JSONResponse(content={"success": True, "message": "Attendance successfully!!!"}, status_code=200)
+    
+    @router.post("/login")
+    async def login(login_dto: LoginDto, db: db_dependency):
+        result = await login_service(login_dto, db)
+        
+        return JSONResponse(content={"success": True, "message": "Login successfully!!!", "student": result}, status_code=200)
+    
+    @router.get("/subjects/{subject_id}")
+    async def get_subject(subject_id: str, db: db_dependency):
+        return await get_subject_by_id(subject_id, db)
+    
+    @router.get("/attendances/students/{subject_id}")
+    async def get_attended_students(subject_id: str, db: db_dependency):
+        return get_attended_students_by_subject_id(subject_id, db)
+    
+    @router.get("/students")
+    async def get_students(db: db_dependency):
+        return get_students_service(db)
     
     return router
 
 router = setup_router(router)
-
