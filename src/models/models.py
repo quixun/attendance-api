@@ -1,9 +1,7 @@
-import uuid
-
-from configs.database import Base
+from src.configs.database import Base
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, text
 from sqlalchemy.orm import relationship
-
+import uuid
 
 class Student(Base):
     __tablename__ = "students"
@@ -17,7 +15,6 @@ class Student(Base):
     
     attendances = relationship("Attendance", back_populates="student")
 
-
 class Subject(Base):
     __tablename__ = "subjects"
 
@@ -28,7 +25,6 @@ class Subject(Base):
     updated_at = Column(TIMESTAMP(timezone=True), server_default=text('now()'))
     
     attendances = relationship("Attendance", back_populates="subject")
-
 
 class Attendance(Base):
     __tablename__ = "attendances"

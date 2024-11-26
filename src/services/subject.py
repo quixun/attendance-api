@@ -1,7 +1,7 @@
-import models.models as _models
-from configs.database import db_dependency
+import src.models.models as _models
+from src.configs.database import db_dependency
 from fastapi import HTTPException
-from models.schema import SubjectSchema
+from src.models.schema import SubjectSchema
 
 
 async def save_subject(subject: SubjectSchema, db: db_dependency):

@@ -2,10 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker , declarative_base
 
-SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:1@localhost:5432/attendance'
+SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:08022003@localhost:5432/attendance'
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 

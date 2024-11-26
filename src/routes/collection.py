@@ -4,22 +4,22 @@ import uuid
 from typing import List
 
 import cv2
-import models.models as _models
-import npwriter
+import src.models.models as _models
+import src.npwriter as npwriter
 import numpy as np
-from configs.database import db_dependency
-from decorators.tag_router import tag_router
-from dto.index import LoginDto, MarkAttendanceDto, RegisterStudentDto
+from src.configs.database import db_dependency
+from src.decorators.tag_router import tag_router
+from src.dto.index import LoginDto, MarkAttendanceDto, RegisterStudentDto
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from models.schema import StudentSchema, SubjectSchema
+from src.models.schema import StudentSchema, SubjectSchema
 from pydantic import BaseModel
-from services.attendance import get_attended_students_by_subject_id
-from services.attendance import mark_attendance as mark_attendance_service
-from services.model import predict, train_model
-from services.subject import (get_subject_by_id, get_subjects_service,
-                              save_subject)
-from services.users import get_students_service, login_service, save_user
+from src.services.attendance import get_attended_students_by_subject_id
+from src.services.attendance import mark_attendance as mark_attendance_service
+from src.services.model import predict, train_model
+from src.services.subject import (get_subject_by_id, get_subjects_service,
+                            save_subject)
+from src.services.users import get_students_service, login_service, save_user
 
 router = APIRouter()
 class ImageUploadRequest(BaseModel):

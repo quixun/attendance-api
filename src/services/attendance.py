@@ -2,8 +2,8 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
-from models.models import Attendance, Student, Subject
-from models.schema import AttendanceSchema
+from src.models.models import Attendance, Student, Subject
+from src.models.schema import AttendanceSchema
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 

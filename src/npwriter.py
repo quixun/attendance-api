@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pandas as pd
 
-f_name = "face_data.csv"
+f_name = "D:\DEV\workspace-for-project\\attendance\\attendance-api\\face_data.csv"
 
 # storing the data into a csv file 
 def write(name, data): 

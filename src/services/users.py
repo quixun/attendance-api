@@ -1,11 +1,11 @@
 from typing import List
 
 import bcrypt
-import models.models as _models
-from configs.database import db_dependency
-from dto.index import LoginDto
+import src.models.models as _models
+from src.configs.database import db_dependency
+from src.dto.index import LoginDto
 from fastapi import HTTPException
-from models.schema import StudentSchema
+from src.models.schema import StudentSchema
 
 
 async def save_user(student: StudentSchema, db: db_dependency):

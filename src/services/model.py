@@ -3,7 +3,7 @@ import base64
 import cv2
 import numpy as np
 import pandas as pd
-from npwriter import f_name
+from src.npwriter import f_name
 from pydantic import BaseModel
 from sklearn.neighbors import KNeighborsClassifier
 
